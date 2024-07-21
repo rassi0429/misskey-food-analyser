@@ -1,0 +1,7 @@
+services:
+  node:
+    build: .
+    restart: always
+    environment:
+      - OPENAI_API_KEY=
+      - MISSKEY_API_KEY=
