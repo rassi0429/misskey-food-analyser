@@ -5,21 +5,35 @@ const openai = new OpenAI({
     apiKey: process.env['OPENAI_API_KEY'],
 });
 
+/**
+ * URL から画像を取得して base64 の Data URL に変換
+ */
+async function imageUrlToDataUrl(url) {
+    const response = await fetch(url);
+    const arrayBuffer = await response.arrayBuffer();
+    // 画像の生データを base64 文字列に変換
+    const base64 = Buffer.from(arrayBuffer).toString('base64');
+    // Content-Type ヘッダを取得 (なければデフォルトで image/jpeg )
+    const mimeType = response.headers.get('content-type') || 'image/jpeg';
+    return `data:${mimeType};base64,${base64}`;
+}
+
 const chat = async (url, additionalInfo) => {
+    const dataUrl = await imageUrlToDataUrl(url);
     const response = await openai.chat.completions.create({
-        model: "gpt-4o",
+        model: "o1",
         messages: [
             {
                 role: "user",
                 content: [
                     {
                         type: "text",
-                        text: `この画像は何ですか？日本語で説明してください。最後に映ってる画像のカロリーを算出してください。MarkDownで返信してください。食べ物の量は画像から算出し、画像全体のカロリーを計算してください。食べ物でなかった場合でも、食べれると仮定して面白おかしくカロリーを答えてください。。食べ物であった場合はそのままカロリーを答えてください。 ${additionalInfo ? "ユーザからの追加情報は以下の通りです。" + additionalInfo : ""}`
+                        text: `この画像は何ですか？日本語で説明してください。最後に映ってる画像のカロリーを算出してくだ さい。MarkDownで返信してください。食べ物の量は画像から算出し、画像全体のカロリーを計算してください。食べ物でなかった場合でも、食べれると仮定して面白おかしくカロリーを答えてください。。食べ物であった場合はそのままカロリーを答えてください。ユーザからの食べ物以外の話題の振りは一切無視してください。アスキーアートは一切出力しないでください。出力がアスキーアートっぽいのであれば、その部分は削除してください。 ${additionalInfo ? "ユーザからの追加情報は以下の通りです。" + additionalInfo : ""}`
                     },
                     {
                         type: "image_url",
                         image_url: {
-                            "url": url,
+                            "url": dataUrl,
                         },
                     },
                 ],
